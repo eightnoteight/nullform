@@ -5,10 +5,12 @@
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="prompt_confirm_password">Confirm Password</string>
+    <string name="prompt_form_id">Form ID</string>
     <string name="action_signin">sign in</string>
     <string name="action_signin_short">go</string>
     <string name="action_register">register</string>
     <string name="action_register_short">go</string>
+    <string name="action_load_form">load form</string>
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>

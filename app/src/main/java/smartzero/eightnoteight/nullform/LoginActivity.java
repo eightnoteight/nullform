@@ -5,45 +5,31 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.app.LoaderManager.LoaderCallbacks;
 
-import android.content.CursorLoader;
-import android.content.Loader;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.AsyncTask;
 
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.client.AuthData;
 import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static android.Manifest.permission.READ_CONTACTS;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private UserLoginTask mAuthTask = null;
 
     // UI references.
     private EditText mEmailView;
@@ -51,18 +37,19 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mConfirmPasswordView;
     private View mProgressView;
     private View mLoginFormView;
-    private Firebase firebase;
-    private String[] DUMMY_CREDENTIALS = {
-            "a@b:c", "d@e:f"
-    };
+    private Firebase fbref = null;
+    private final String FIREBASE_APP_URL = "https://nullform.firebaseio.com/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
         // Firebase initial setup for this application.
         Firebase.setAndroidContext(this);
+        if (fbref == null) {
+            fbref = new Firebase(FIREBASE_APP_URL);
+        }
 
-        setContentView(R.layout.activity_login);
         // Set up the login form.
         mEmailView = (EditText) findViewById(R.id.email);
 
@@ -74,9 +61,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public void attemptRegister(View view) {
-        if (mAuthTask != null) {
-            return;
-        }
 
         if (mConfirmPasswordView.getVisibility() == View.GONE) {
             mConfirmPasswordView.setVisibility(View.VISIBLE);
@@ -113,9 +97,7 @@ public class LoginActivity extends AppCompatActivity {
         // check for validity of the entries.
         if (!isValidEmail(email)) {
             mEmailView.setError("Invalid Email");
-            if(firstInvalidEntry == null) {
-                firstInvalidEntry = mEmailView;
-            }
+            firstInvalidEntry = mEmailView;
         }
         if (!isValidPassword(password)) {
             mPasswordView.setError("Invalid Password");
@@ -123,7 +105,7 @@ public class LoginActivity extends AppCompatActivity {
                 firstInvalidEntry = mPasswordView;
             }
         }
-        if (StringUtils.equals(password, confirmpassword)) {
+        if (!StringUtils.equals(password, confirmpassword)) {
             mConfirmPasswordView.setError("Didn't match with the password");
             if (firstInvalidEntry == null) {
                 firstInvalidEntry = mConfirmPasswordView;
@@ -135,14 +117,13 @@ public class LoginActivity extends AppCompatActivity {
             firstInvalidEntry.requestFocus();
         }
         else {
-            mAuthTask = new UserLoginTask(email, password, this);
+            // show a progress till user is created or an error encountered trying the same.
+            showProgress(true);
+            fbref.createUser(email, password, new RegisterValueResultHandler());
         }
     }
 
     public void attemptLogin(View view) {
-        if (mAuthTask != null) {
-            return;
-        }
 
         // Reset errors.
         mEmailView.setError(null);
@@ -178,11 +159,39 @@ public class LoginActivity extends AppCompatActivity {
             // form field with an error.
             focusView.requestFocus();
         } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
+            // Show a progress spinner, and kick off Firebase Login System
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, password, this);
-            mAuthTask.execute((Void) null);
+            /*
+            System.out.println("< fbref.authWithPassword");
+
+            new AsyncTask<Void, Void, Void>() {
+                protected Void doInBackground(Void... params) {
+                    testInternet();
+                    return null;
+                }
+                protected void onPostExecute(Void result) {
+
+                }
+            }.execute();
+            */
+            fbref.authWithPassword(email, password, new LoginAuthResultHandler());
+        }
+    }
+
+    public void testInternet() {
+        try {
+            URL yahoo = new URL("http://httpbin.org/get");
+            URLConnection yc = yahoo.openConnection();
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(
+                            yc.getInputStream()));
+            String inputLine;
+
+            while ((inputLine = in.readLine()) != null)
+                System.out.println("internet working> " + inputLine);
+            in.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -232,68 +241,42 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
-
-        private final String mEmail;
-        private final String mPassword;
-        private Context context;
-
-        UserLoginTask(String email, String password, Context _context) {
-            mEmail = email;
-            mPassword = password;
-            context = _context;
-        }
+    public class LoginAuthResultHandler implements Firebase.AuthResultHandler {
 
         @Override
-        protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-
-            try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
-            }
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
+        public void onAuthenticated(AuthData authData) {
+            String uid = authData.getUid();
+            Intent i = new Intent(LoginActivity.this, MainActivity.class);
+            i.putExtra("uid", uid);
             showProgress(false);
-
-            if (success) {
-                Toast.makeText(LoginActivity.this, "signing in..", Toast.LENGTH_LONG).show();
-                Intent i = new Intent(LoginActivity.this, MainActivity.class);
-                // TODO: put extras, the login token
-                // i.putExtra("token", "dassadadssa")
-                LoginActivity.this.startActivity(i);
-                finish();
-            } else {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
-            }
+            LoginActivity.this.startActivity(i);
+            LoginActivity.this.finish();
         }
 
         @Override
-        protected void onCancelled() {
-            mAuthTask = null;
+        public void onAuthenticationError(FirebaseError firebaseError) {
+            Toast.makeText(LoginActivity.this, firebaseError.toString(), Toast.LENGTH_LONG).show();
             showProgress(false);
         }
+    }
+
+    public class RegisterValueResultHandler implements Firebase.ValueResultHandler<Map<String, Object>> {
+        @Override
+        public void onSuccess(Map<String, Object> result) {
+            String uid = (String)result.get("uid");
+            Intent i = new Intent(LoginActivity.this, MainActivity.class);
+            i.putExtra("uid", uid);
+            showProgress(false);
+            LoginActivity.this.startActivity(i);
+            LoginActivity.this.finish();
+        }
+
+        @Override
+        public void onError(FirebaseError firebaseError) {
+            Toast.makeText(LoginActivity.this, firebaseError.toString(), Toast.LENGTH_LONG).show();
+            showProgress(false);
+        }
+
     }
 }
 

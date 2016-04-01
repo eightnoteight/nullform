@@ -1,0 +1,21 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="smartzero.eightnoteight.nullform.CreateFormFragment">
+    <EditText
+        android:id="@+id/questions_et"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="10"
+        android:inputType="textMultiLine"
+        android:hint="@string/prompt_questions"
+        android:gravity="top" />
+    <Button
+        android:id="@+id/create_form_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Create Form" />
+
+</LinearLayout>

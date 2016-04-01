@@ -29,7 +29,7 @@ import java.net.URLConnection;
 import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
-
+    boolean TESTING = true;
 
     // UI references.
     private EditText mEmailView;
@@ -174,7 +174,19 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }.execute();
             */
-            fbref.authWithPassword(email, password, new LoginAuthResultHandler());
+
+             fbref.authWithPassword(email, password, new LoginAuthResultHandler());
+
+//            // TODO: for testing ui
+//            if (TESTING) {
+//                Intent i = new Intent(LoginActivity.this, MainActivity.class);
+//                showProgress(false);
+//                LoginActivity.this.startActivity(i);
+//                LoginActivity.this.finish();
+//            }
+//            else {
+//                fbref.authWithPassword(email, password, new LoginAuthResultHandler());
+//            }
         }
     }
 
@@ -254,9 +266,22 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onAuthenticationError(FirebaseError firebaseError) {
-            Toast.makeText(LoginActivity.this, firebaseError.toString(), Toast.LENGTH_LONG).show();
+        public void onAuthenticationError(FirebaseError fberr) {
+            int err = fberr.getCode();
             showProgress(false);
+            switch (err) {
+                case FirebaseError.INVALID_PASSWORD:
+                    mPasswordView.setError(fberr.getMessage());
+                    mPasswordView.requestFocus();
+                    break;
+                case FirebaseError.INVALID_EMAIL:
+                    mEmailView.setError(fberr.getMessage());
+                    mEmailView.requestFocus();
+                    break;
+                default:
+                    Toast.makeText(LoginActivity.this, fberr.toString(), Toast.LENGTH_LONG).show();
+                    break;
+            }
         }
     }
 

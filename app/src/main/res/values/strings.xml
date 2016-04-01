@@ -6,11 +6,15 @@
     <string name="prompt_password">Password</string>
     <string name="prompt_confirm_password">Confirm Password</string>
     <string name="prompt_form_id">Form ID</string>
+    <string name="prompt_question_text">Question Text</string>
+    <string name="prompt_questions"><b>Questions:</b>\nEach question is separated by a new line</string>
     <string name="action_signin">sign in</string>
     <string name="action_signin_short">go</string>
     <string name="action_register">register</string>
     <string name="action_register_short">go</string>
     <string name="action_load_form">load form</string>
+    <string name="action_create_form">create form</string>
+    <string name="action_new_question">new question</string>
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
@@ -21,4 +25,7 @@
     <string name="title_activity_main">nullform</string>
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
